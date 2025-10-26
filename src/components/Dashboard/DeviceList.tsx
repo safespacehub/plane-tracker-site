@@ -54,7 +54,9 @@ export default function DeviceList() {
     }
   }
 
-  // Add new device
+  // Claim an existing device by assigning user_id
+  // Devices are auto-created by the ingest edge function when ESP32 sends data
+  // Users "add" them by claiming ownership via user_id assignment
   const handleAddDevice = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -63,14 +65,15 @@ export default function DeviceList() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Update the existing device to claim it
       const { error } = await supabase
         .from('devices')
-        .insert([{
-          device_uuid: formData.device_uuid,
+        .update({
           name: formData.name || null,
           plane_id: formData.plane_id || null,
           user_id: user.id,
-        }])
+        })
+        .eq('device_uuid', formData.device_uuid)
 
       if (error) throw error
 
