@@ -3,8 +3,8 @@ import { supabase } from '../../lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 
 // Extended device type with owner info
+// Note: devices table uses device_uuid as primary key (no separate id column)
 interface DeviceWithOwner {
-  id: string
   device_uuid: string
   user_id: string | null
   plane_id: string | null
@@ -80,8 +80,8 @@ export default function Admin() {
       }
 
       // Transform the data into our component's expected format
+      // RPC function returns device_uuid as primary identifier (no separate id)
       const devicesWithOwners: DeviceWithOwner[] = (devicesData || []).map((device: any) => ({
-        id: device.id,
         device_uuid: device.device_uuid,
         user_id: device.user_id,
         plane_id: device.plane_id,
@@ -283,7 +283,7 @@ export default function Admin() {
               </thead>
               <tbody>
                 {filteredDevices.map((device) => (
-                  <tr key={device.id}>
+                  <tr key={device.device_uuid}>
                     <td>
                       <div className="flex items-center gap-2">
                         <code className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">

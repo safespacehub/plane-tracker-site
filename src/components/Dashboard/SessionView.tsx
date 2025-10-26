@@ -187,7 +187,7 @@ export default function SessionView() {
             >
               <option value="">All Devices</option>
               {devices.map((device) => (
-                <option key={device.id} value={device.device_uuid}>
+                <option key={device.device_uuid} value={device.device_uuid}>
                   {device.name || device.device_uuid.substring(0, 8)}
                   {device.plane ? ` (${device.plane.tail_number})` : ''}
                 </option>
@@ -334,7 +334,7 @@ export default function SessionView() {
 
                 return (
                   <div
-                    key={device.id}
+                    key={device.device_uuid}
                     className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50"
                   >
                     <div>

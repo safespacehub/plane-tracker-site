@@ -84,6 +84,7 @@ export default function DeviceList() {
   }
 
   // Update device
+  // Note: devices table uses device_uuid as primary key
   const handleUpdateDevice = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -97,7 +98,7 @@ export default function DeviceList() {
           name: formData.name || null,
           plane_id: formData.plane_id || null,
         })
-        .eq('id', selectedDevice.id)
+        .eq('device_uuid', selectedDevice.device_uuid)
 
       if (error) throw error
 
@@ -112,7 +113,8 @@ export default function DeviceList() {
   }
 
   // Delete device
-  const handleDeleteDevice = async (deviceId: string) => {
+  // Note: Pass device_uuid (the primary key), not a separate id
+  const handleDeleteDevice = async (deviceUuid: string) => {
     if (!confirm('Are you sure you want to delete this device? This will NOT delete associated session data.')) {
       return
     }
@@ -121,7 +123,7 @@ export default function DeviceList() {
       const { error } = await supabase
         .from('devices')
         .delete()
-        .eq('id', deviceId)
+        .eq('device_uuid', deviceUuid)
 
       if (error) throw error
 
@@ -205,7 +207,7 @@ export default function DeviceList() {
               </thead>
               <tbody>
                 {devices.map((device) => (
-                  <tr key={device.id}>
+                  <tr key={device.device_uuid}>
                     <td>
                       <code className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
                         {device.device_uuid.substring(0, 8)}...
@@ -239,7 +241,7 @@ export default function DeviceList() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteDevice(device.id)}
+                          onClick={() => handleDeleteDevice(device.device_uuid)}
                           className="text-red-600 hover:text-red-700 dark:text-red-400 font-medium text-sm"
                         >
                           Delete

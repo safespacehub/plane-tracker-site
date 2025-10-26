@@ -21,7 +21,6 @@ export interface Plane {
 }
 
 export interface Device {
-  id: string
   device_uuid: string
   user_id: string | null
   plane_id: string | null
