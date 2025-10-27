@@ -24,6 +24,13 @@ interface DeviceWithOwner {
   } | null
 }
 
+// User type for assigning devices
+interface User {
+  user_id: string
+  email: string
+  created_at: string
+}
+
 export default function Admin() {
   const [devices, setDevices] = useState<DeviceWithOwner[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,6 +39,13 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterOwner, setFilterOwner] = useState<string>('all')
   const [owners, setOwners] = useState<{ id: string; email: string }[]>([])
+  const [allUsers, setAllUsers] = useState<User[]>([])
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [selectedDevice, setSelectedDevice] = useState<DeviceWithOwner | null>(null)
+  const [assignFormData, setAssignFormData] = useState({
+    user_id: '',
+    name: '',
+  })
 
   // Check if current user is an admin and fetch data
   useEffect(() => {
@@ -110,6 +124,16 @@ export default function Admin() {
 
       setOwners(uniqueOwners)
       setDevices(devicesWithOwners)
+
+      // Fetch all users for the assign dropdown
+      const { data: usersData, error: usersError } = await supabase
+        .rpc('get_admin_users')
+
+      if (usersError) {
+        console.error('Error fetching users:', usersError)
+      } else {
+        setAllUsers(usersData || [])
+      }
     } catch (error: any) {
       console.error('Error fetching admin data:', error)
       setError(error.message)
@@ -138,6 +162,46 @@ export default function Admin() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     // You could add a toast notification here
+  }
+
+  // Open assign modal for a device
+  const openAssignModal = (device: DeviceWithOwner) => {
+    setSelectedDevice(device)
+    setAssignFormData({
+      user_id: device.user_id || '',
+      name: device.name || '',
+    })
+    setShowAssignModal(true)
+  }
+
+  // Handle device assignment/update by admin
+  const handleAssignDevice = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (!selectedDevice) return
+
+    try {
+      // Admin updates device user_id and name
+      const { error: updateError } = await supabase
+        .from('devices')
+        .update({
+          user_id: assignFormData.user_id || null,
+          name: assignFormData.name || null,
+        })
+        .eq('device_uuid', selectedDevice.device_uuid)
+
+      if (updateError) throw updateError
+
+      // Reset and refresh
+      setShowAssignModal(false)
+      setSelectedDevice(null)
+      setAssignFormData({ user_id: '', name: '' })
+      await checkAdminAndFetchData()
+    } catch (error: any) {
+      console.error('Error assigning device:', error)
+      setError(error.message)
+    }
   }
 
   if (loading) {
@@ -279,6 +343,7 @@ export default function Admin() {
                   <th>Assigned Plane</th>
                   <th>Last Seen</th>
                   <th>Created</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -337,6 +402,14 @@ export default function Admin() {
                     <td className="text-sm text-gray-600 dark:text-gray-400">
                       {formatDistanceToNow(new Date(device.created_at), { addSuffix: true })}
                     </td>
+                    <td>
+                      <button
+                        onClick={() => openAssignModal(device)}
+                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium text-sm"
+                      >
+                        {device.user_id ? 'Edit' : 'Assign User'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -354,13 +427,96 @@ export default function Admin() {
           <div className="text-sm text-blue-700 dark:text-blue-300">
             <p className="font-medium mb-1">Admin Tools</p>
             <p>
-              This page shows ALL devices registered in the system, regardless of owner. 
-              Use this to track devices, debug issues, and help users assign devices to their planes. 
-              The device UUIDs shown here should match what's printed on the ESP32 serial console.
+              Assign devices to users here. When an ESP32 sends data, it auto-creates an unassigned device. 
+              Click "Assign User" to give ownership to a user—they'll see it in their Devices page. 
+              Users can then assign the device to a plane. Device UUIDs are shown on the ESP32 serial console.
             </p>
           </div>
         </div>
       </div>
+
+      {/* Assign Device Modal */}
+      {showAssignModal && selectedDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+          <div className="card p-6 max-w-md w-full animate-scale-in">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              {selectedDevice.user_id ? 'Edit Device Assignment' : 'Assign Device to User'}
+            </h2>
+            <form onSubmit={handleAssignDevice} className="space-y-4">
+              {/* Device UUID (read-only) */}
+              <div>
+                <label className="label">Device UUID</label>
+                <input
+                  type="text"
+                  value={selectedDevice.device_uuid}
+                  className="input bg-gray-100 dark:bg-gray-700"
+                  disabled
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  UUID cannot be changed
+                </p>
+              </div>
+
+              {/* Device Name */}
+              <div>
+                <label htmlFor="assign_name" className="label">
+                  Device Name (optional)
+                </label>
+                <input
+                  id="assign_name"
+                  type="text"
+                  value={assignFormData.name}
+                  onChange={(e) => setAssignFormData({ ...assignFormData, name: e.target.value })}
+                  className="input"
+                  placeholder="Main Tracker"
+                />
+              </div>
+
+              {/* User Assignment */}
+              <div>
+                <label htmlFor="assign_user" className="label">
+                  Assign to User
+                </label>
+                <select
+                  id="assign_user"
+                  value={assignFormData.user_id}
+                  onChange={(e) => setAssignFormData({ ...assignFormData, user_id: e.target.value })}
+                  className="input"
+                >
+                  <option value="">Unassigned (No Owner)</option>
+                  {allUsers.map((user) => (
+                    <option key={user.user_id} value={user.user_id}>
+                      {user.email}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  User will see this device in their Devices page
+                </p>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAssignModal(false)
+                    setSelectedDevice(null)
+                    setAssignFormData({ user_id: '', name: '' })
+                    setError(null)
+                  }}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary flex-1">
+                  {selectedDevice.user_id ? 'Update Assignment' : 'Assign Device'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

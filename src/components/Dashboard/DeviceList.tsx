@@ -6,11 +6,9 @@ export default function DeviceList() {
   const [devices, setDevices] = useState<Device[]>([])
   const [planes, setPlanes] = useState<Plane[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null)
   const [formData, setFormData] = useState({
-    device_uuid: '',
     name: '',
     plane_id: '',
   })
@@ -54,38 +52,6 @@ export default function DeviceList() {
     }
   }
 
-  // Claim an existing device by assigning user_id
-  // Devices are auto-created by the ingest edge function when ESP32 sends data
-  // Users "add" them by claiming ownership via user_id assignment
-  const handleAddDevice = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      // Update the existing device to claim it
-      const { error } = await supabase
-        .from('devices')
-        .update({
-          name: formData.name || null,
-          plane_id: formData.plane_id || null,
-          user_id: user.id,
-        })
-        .eq('device_uuid', formData.device_uuid)
-
-      if (error) throw error
-
-      // Reset form and close modal
-      setFormData({ device_uuid: '', name: '', plane_id: '' })
-      setShowAddModal(false)
-      fetchData()
-    } catch (error: any) {
-      setError(error.message)
-    }
-  }
-
   // Update device
   // Note: devices table uses device_uuid as primary key
   const handleUpdateDevice = async (e: React.FormEvent) => {
@@ -106,7 +72,7 @@ export default function DeviceList() {
       if (error) throw error
 
       // Reset form and close modal
-      setFormData({ device_uuid: '', name: '', plane_id: '' })
+      setFormData({ name: '', plane_id: '' })
       setShowEditModal(false)
       setSelectedDevice(null)
       fetchData()
@@ -140,7 +106,6 @@ export default function DeviceList() {
   const openEditModal = (device: Device) => {
     setSelectedDevice(device)
     setFormData({
-      device_uuid: device.device_uuid,
       name: device.name || '',
       plane_id: device.plane_id || '',
     })
@@ -158,21 +123,13 @@ export default function DeviceList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Devices
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage your tracking devices and plane assignments.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary"
-        >
-          + Add Device
-        </button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Devices
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Manage your tracking devices and plane assignments. Contact an admin to get devices assigned to your account.
+        </p>
       </div>
 
       {/* Error message */}
@@ -185,15 +142,13 @@ export default function DeviceList() {
       {/* Devices table */}
       {devices.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            No devices yet. Add one to get started.
+          <div className="text-6xl mb-4">📱</div>
+          <p className="text-gray-500 dark:text-gray-400 mb-2">
+            No devices assigned yet.
           </p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary"
-          >
-            Add Your First Device
-          </button>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Contact an admin to have devices assigned to your account.
+          </p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -259,86 +214,6 @@ export default function DeviceList() {
         </div>
       )}
 
-      {/* Add Device Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
-          <div className="card p-6 max-w-md w-full animate-scale-in">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Add Device
-            </h2>
-            <form onSubmit={handleAddDevice} className="space-y-4">
-              <div>
-                <label htmlFor="device_uuid" className="label">
-                  Device UUID *
-                </label>
-                <input
-                  id="device_uuid"
-                  type="text"
-                  value={formData.device_uuid}
-                  onChange={(e) => setFormData({ ...formData, device_uuid: e.target.value })}
-                  className="input"
-                  placeholder="550e8400-e29b-41d4-a716-446655440000"
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Find this on your ESP32 serial output
-                </p>
-              </div>
-
-              <div>
-                <label htmlFor="name" className="label">
-                  Device Name (optional)
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="input"
-                  placeholder="Main Tracker"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="plane_id" className="label">
-                  Assign to Plane (optional)
-                </label>
-                <select
-                  id="plane_id"
-                  value={formData.plane_id}
-                  onChange={(e) => setFormData({ ...formData, plane_id: e.target.value })}
-                  className="input"
-                >
-                  <option value="">None</option>
-                  {planes.map((plane) => (
-                    <option key={plane.id} value={plane.id}>
-                      {plane.tail_number} - {plane.model || 'Unknown Model'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false)
-                    setFormData({ device_uuid: '', name: '', plane_id: '' })
-                    setError(null)
-                  }}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  Add Device
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Edit Device Modal */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
@@ -351,7 +226,7 @@ export default function DeviceList() {
                 <label className="label">Device UUID</label>
                 <input
                   type="text"
-                  value={formData.device_uuid}
+                  value={selectedDevice?.device_uuid || ''}
                   className="input bg-gray-100 dark:bg-gray-700"
                   disabled
                 />
@@ -399,7 +274,7 @@ export default function DeviceList() {
                   onClick={() => {
                     setShowEditModal(false)
                     setSelectedDevice(null)
-                    setFormData({ device_uuid: '', name: '', plane_id: '' })
+                    setFormData({ name: '', plane_id: '' })
                     setError(null)
                   }}
                   className="btn-secondary flex-1"
