@@ -370,6 +370,11 @@ export default function PlaneDetail() {
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {stats.averageFlightTime > 0 ? formatDuration(stats.averageFlightTime) : 'N/A'}
           </p>
+          {stats.averageFlightTime > 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {formatHobbs(stats.averageFlightTime)} Hobbs
+            </p>
+          )}
         </div>
 
         {/* Assigned Devices */}
@@ -413,6 +418,9 @@ export default function PlaneDetail() {
                 <p className="text-xl font-bold text-gray-900 dark:text-white">
                   {formatDuration(stats.longestFlight)}
                 </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {formatHobbs(stats.longestFlight)} Hobbs
+                </p>
               </div>
               <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg flex items-center justify-center">
                 <svg
@@ -441,6 +449,9 @@ export default function PlaneDetail() {
                 </p>
                 <p className="text-xl font-bold text-gray-900 dark:text-white">
                   {formatDuration(stats.shortestFlight)}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {formatHobbs(stats.shortestFlight)} Hobbs
                 </p>
               </div>
               <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900/20 rounded-lg flex items-center justify-center">
@@ -514,7 +525,7 @@ export default function PlaneDetail() {
                       {device.sessionCount} flight{device.sessionCount !== 1 ? 's' : ''}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatDuration(device.totalFlightTime)}
+                      {formatDuration(device.totalFlightTime)} ({formatHobbs(device.totalFlightTime)}h)
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Last seen: {formatRelativeTime(device.last_seen)}
@@ -553,6 +564,9 @@ export default function PlaneDetail() {
                     Duration
                   </th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Hobbs
+                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 dark:text-gray-400">
                     Status
                   </th>
                 </tr>
@@ -575,6 +589,9 @@ export default function PlaneDetail() {
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">
                         {formatDuration(session.run_seconds)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 font-mono">
+                        {formatHobbs(session.run_seconds)}
                       </td>
                       <td className="py-3 px-4">
                         <span
