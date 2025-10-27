@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, Plane } from '../../lib/supabase'
 
 export default function PlaneList() {
+  const navigate = useNavigate()
   const [planes, setPlanes] = useState<Plane[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -196,7 +198,11 @@ export default function PlaneList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {planes.map((plane) => (
-            <div key={plane.id} className="card p-6 card-hover">
+            <div 
+              key={plane.id} 
+              className="card p-6 card-hover cursor-pointer"
+              onClick={() => navigate(`/planes/${plane.id}`)}
+            >
               <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
                   <svg
@@ -215,7 +221,10 @@ export default function PlaneList() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => openEditModal(plane)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openEditModal(plane)
+                    }}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
                     <svg
@@ -233,7 +242,10 @@ export default function PlaneList() {
                     </svg>
                   </button>
                   <button
-                    onClick={() => handleDeletePlane(plane.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeletePlane(plane.id)
+                    }}
                     className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                   >
                     <svg

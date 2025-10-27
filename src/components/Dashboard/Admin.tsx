@@ -46,11 +46,30 @@ export default function Admin() {
     user_id: '',
     name: '',
   })
+  
+  // Autocomplete state for user email input
+  const [emailInput, setEmailInput] = useState('')
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false)
 
   // Check if current user is an admin and fetch data
   useEffect(() => {
     checkAdminAndFetchData()
   }, [])
+
+  // Close email suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('#assign_user') && !target.closest('.autocomplete-dropdown')) {
+        setShowEmailSuggestions(false)
+      }
+    }
+
+    if (showEmailSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showEmailSuggestions])
 
   const checkAdminAndFetchData = async () => {
     try {
@@ -171,8 +190,37 @@ export default function Admin() {
       user_id: device.user_id || '',
       name: device.name || '',
     })
+    
+    // Set email input to current user's email if assigned
+    const currentUser = allUsers.find(u => u.user_id === device.user_id)
+    setEmailInput(currentUser?.email || '')
+    setShowEmailSuggestions(false)
+    
     setShowAssignModal(true)
   }
+
+  // Handle email input change for autocomplete
+  const handleEmailInputChange = (value: string) => {
+    setEmailInput(value)
+    setShowEmailSuggestions(true)
+    
+    // If input is cleared, clear the user_id selection
+    if (!value.trim()) {
+      setAssignFormData({ ...assignFormData, user_id: '' })
+    }
+  }
+
+  // Handle selecting a user from autocomplete suggestions
+  const handleSelectUser = (user: User) => {
+    setEmailInput(user.email)
+    setAssignFormData({ ...assignFormData, user_id: user.user_id })
+    setShowEmailSuggestions(false)
+  }
+
+  // Filter users based on email input for autocomplete
+  const filteredUserSuggestions = allUsers.filter(user =>
+    user.email.toLowerCase().includes(emailInput.toLowerCase())
+  ).slice(0, 10) // Limit to 10 suggestions for performance
 
   // Handle device assignment/update by admin
   const handleAssignDevice = async (e: React.FormEvent) => {
@@ -197,6 +245,8 @@ export default function Admin() {
       setShowAssignModal(false)
       setSelectedDevice(null)
       setAssignFormData({ user_id: '', name: '' })
+      setEmailInput('')
+      setShowEmailSuggestions(false)
       await checkAdminAndFetchData()
     } catch (error: any) {
       console.error('Error assigning device:', error)
@@ -427,7 +477,7 @@ export default function Admin() {
           <div className="text-sm text-blue-700 dark:text-blue-300">
             <p className="font-medium mb-1">Admin Tools</p>
             <p>
-              Assign devices to users here. When an ESP32 sends data, it auto-creates an unassigned device. 
+            image.png              Assign devices to users here. When an ESP32 sends data, it auto-creates an unassigned device. 
               Click "Assign User" to give ownership to a user—they'll see it in their Devices page. 
               Users can then assign the device to a plane. Device UUIDs are shown on the ESP32 serial console.
             </p>
@@ -472,26 +522,42 @@ export default function Admin() {
                 />
               </div>
 
-              {/* User Assignment */}
-              <div>
+              {/* User Assignment - Autocomplete */}
+              <div className="relative">
                 <label htmlFor="assign_user" className="label">
                   Assign to User
                 </label>
-                <select
+                <input
                   id="assign_user"
-                  value={assignFormData.user_id}
-                  onChange={(e) => setAssignFormData({ ...assignFormData, user_id: e.target.value })}
+                  type="text"
+                  value={emailInput}
+                  onChange={(e) => handleEmailInputChange(e.target.value)}
+                  onFocus={() => setShowEmailSuggestions(true)}
                   className="input"
-                >
-                  <option value="">Unassigned (No Owner)</option>
-                  {allUsers.map((user) => (
-                    <option key={user.user_id} value={user.user_id}>
-                      {user.email}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Type email to search..."
+                  autoComplete="off"
+                />
+                
+                {/* Autocomplete suggestions dropdown */}
+                {showEmailSuggestions && emailInput && filteredUserSuggestions.length > 0 && (
+                  <div className="autocomplete-dropdown absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredUserSuggestions.map((user) => (
+                      <button
+                        key={user.user_id}
+                        type="button"
+                        onClick={() => handleSelectUser(user)}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-gray-900 dark:text-white first:rounded-t-lg last:rounded-b-lg"
+                      >
+                        {user.email}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  User will see this device in their Devices page
+                  {assignFormData.user_id 
+                    ? 'User will see this device in their Devices page' 
+                    : 'Start typing to search for a user, or leave blank for unassigned'}
                 </p>
               </div>
 
@@ -503,6 +569,8 @@ export default function Admin() {
                     setShowAssignModal(false)
                     setSelectedDevice(null)
                     setAssignFormData({ user_id: '', name: '' })
+                    setEmailInput('')
+                    setShowEmailSuggestions(false)
                     setError(null)
                   }}
                   className="btn-secondary flex-1"

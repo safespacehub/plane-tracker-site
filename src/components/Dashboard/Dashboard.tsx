@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase, Device, Plane, Session } from '../../lib/supabase'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -273,8 +274,8 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <a
-          href="/devices"
+        <Link
+          to="/devices"
           className="card p-6 card-hover cursor-pointer text-center"
         >
           <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -298,10 +299,10 @@ export default function Dashboard() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Add, edit, or assign devices to planes
           </p>
-        </a>
+        </Link>
 
-        <a
-          href="/planes"
+        <Link
+          to="/planes"
           className="card p-6 card-hover cursor-pointer text-center"
         >
           <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -325,10 +326,10 @@ export default function Dashboard() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Add or edit your aircraft fleet
           </p>
-        </a>
+        </Link>
 
-        <a
-          href="/sessions"
+        <Link
+          to="/sessions"
           className="card p-6 card-hover cursor-pointer text-center"
         >
           <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -352,7 +353,7 @@ export default function Dashboard() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Detailed flight history and analytics
           </p>
-        </a>
+        </Link>
       </div>
     </div>
   )

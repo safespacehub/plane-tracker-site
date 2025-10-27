@@ -9,6 +9,7 @@ import Register from './components/Auth/Register'
 import Dashboard from './components/Dashboard/Dashboard'
 import DeviceList from './components/Dashboard/DeviceList'
 import PlaneList from './components/Dashboard/PlaneList'
+import PlaneDetail from './components/Dashboard/PlaneDetail'
 import SessionView from './components/Dashboard/SessionView'
 import Admin from './components/Dashboard/Admin'
 import Layout from './components/Layout/Layout'
@@ -64,6 +65,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="devices" element={<DeviceList />} />
           <Route path="planes" element={<PlaneList />} />
+          <Route path="planes/:id" element={<PlaneDetail />} />
           <Route path="sessions" element={<SessionView />} />
           <Route path="admin" element={<Admin />} />
         </Route>
